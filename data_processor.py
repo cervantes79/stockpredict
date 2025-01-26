@@ -17,8 +17,7 @@ class DataProcessor(Process):
         
     def get_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         if "RSI" in self.config.TECHNICAL_INDICATORS:
-            # DataFrame'den direkt numpy array'e çevirip kullanıyoruz
-            close_prices = df['Close'].values  # pandas Series'ten numpy array'e
+            close_prices = df['Close'].values 
             df['RSI'] = ta.momentum.RSIIndicator(close_prices).rsi()
         if "MACD" in self.config.TECHNICAL_INDICATORS:
             close_prices = df['Close'].values
@@ -36,18 +35,14 @@ class DataProcessor(Process):
 
     def preprocess_data(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         try:
-            # Fix column names if MultiIndex
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.droplevel(1)
             
-            # Add technical indicators
             df = self.get_technical_indicators(df)
             
-            # Create sequences
             sequences = []
             targets = []
             
-            # Get base features
             base_data = df[self.config.FEATURES].values
             
             for i in range(len(df) - self.config.SEQUENCE_LENGTH):
@@ -79,19 +74,12 @@ class DataProcessor(Process):
     def run(self):
         while True:
             try:
-                # Fetch data
                 df = yf.download(self.config.SYMBOL, interval=self.config.TIMEFRAME)
-                
-                # Process data
                 sequences, targets = self.preprocess_data(df)
-                
-                # Convert timestamp to string for JSON serialization
                 current_time = df.index[-1].strftime('%Y-%m-%d %H:%M:%S')
-                
-                # Send to model process
                 self.data_queue.put((sequences, targets, current_time))
                 
-                time.sleep(1)  # Add small delay
+                time.sleep(1) 
                 
             except Exception as e:
                 print(f"Data processing error: {e}")
@@ -105,7 +93,6 @@ class DataProcessor(Process):
         
     def get_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         if "RSI" in self.config.TECHNICAL_INDICATORS:
-            # pandas Series olarak gönderiyoruz
             df['RSI'] = ta.momentum.RSIIndicator(pd.Series(df['Close'])).rsi()
         if "MACD" in self.config.TECHNICAL_INDICATORS:
             macd = ta.trend.MACD(pd.Series(df['Close']))
@@ -120,13 +107,8 @@ class DataProcessor(Process):
 
     def preprocess_data(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         try:
-            # Add technical indicators
             df = self.get_technical_indicators(df)
-            
-            # Select only the required features
             feature_data = df[self.config.FEATURES].values
-            
-            # Create sequences for LSTM
             sequences = []
             targets = []
             
@@ -136,13 +118,8 @@ class DataProcessor(Process):
                 sequences.append(seq)
                 targets.append(target)
             
-            # Convert to numpy arrays with correct shapes
-            sequences = np.array(sequences)  # Shape: (n_samples, sequence_length, n_features)
-            targets = np.array(targets)      # Shape: (n_samples,)
-            
-            # Print shapes for debugging
-            #print(f"Sequences shape: {sequences.shape}")
-            #print(f"Targets shape: {targets.shape}")
+            sequences = np.array(sequences)  
+            targets = np.array(targets)      
             
             return sequences, targets
             

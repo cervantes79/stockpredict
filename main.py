@@ -9,8 +9,7 @@ def setup_environment():
     os.makedirs("logs", exist_ok=True)
     os.makedirs("data", exist_ok=True)
     os.makedirs("models", exist_ok=True)
-    
-    # Dosya izinlerini kontrol et
+
     for directory in ["logs", "data", "models"]:
         try:
             test_file = os.path.join(directory, "test.txt")
@@ -23,27 +22,20 @@ def setup_environment():
 
 
 def main():
-    # Setup environment
     setup_environment()
-    # Initialize configuration
     config = Config()
-    
-    # Create queues
     data_queue = Queue()
     signal_queue = Queue()
     
-    # Initialize processors
     data_processor = DataProcessor(config, data_queue)
     model_processor = ModelProcessor(config, data_queue, signal_queue)
     signal_processor = SignalProcessor(config, signal_queue)
     
-    # Start processes
     data_processor.start()
     model_processor.start()
     signal_processor.start()
     
     try:
-        # Keep main process alive
         data_processor.join()
         model_processor.join()
         signal_processor.join()
